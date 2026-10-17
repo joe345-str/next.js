@@ -52,12 +52,16 @@ jobs:
           persist-credentials: false
 
       - name: Display release mode
+        env:
+          DRY_RUN: ${{ inputs.dry-run }}
+          NPM_NAME: ${{ inputs.npm-name || '@next/rspack-core' }}
+          NPM_TAG: ${{ inputs.npm-tag || 'latest' }}
         run: |
           echo "🚀 Release Configuration:"
-          echo "  - Dry-run mode: ${{ inputs.dry-run }}"
-          echo "  - NPM name: ${{ inputs.npm-name || '@next/rspack-core' }}"
-          echo "  - NPM tag: ${{ inputs.npm-tag || 'latest' }}"
-          if [ "${{ inputs.dry-run }}" == "true" ]; then
+          echo "  - Dry-run mode: $DRY_RUN"
+          echo "  - NPM name: $NPM_NAME"
+          echo "  - NPM tag: $NPM_TAG"
+          if [ "$DRY_RUN" == "true" ]; then
             echo "  - ⚠️  This is a DRY RUN - no packages will be published"
           else
             echo "  - 📦 This will PUBLISH packages to npm"
@@ -76,7 +80,9 @@ jobs:
         run: corepack prepare
 
       - name: Change npm name
-        run: pnpm run change-npm-name "${{ inputs.npm-name }}"
+        env:
+          NPM_NAME: ${{ inputs.npm-name }}
+        run: pnpm run change-npm-name "$NPM_NAME"
         working-directory: ./rspack
 
       - name: Cache pnpm dependencies
@@ -118,14 +124,20 @@ jobs:
         working-directory: ${{ steps.napi-info.outputs.binding-directory }}
 
       - name: Release npm binding packages
+        env:
+          NPM_TAG: ${{ inputs.npm-tag }}
+          DRY_RUN_FLAG: ${{ inputs.dry-run && '--dry-run' || '' }}
         run: |
           npm config set access public
           npm config set provenance true
-          npm config set tag "${{ inputs.npm-tag }}"
-          pnpm napi pre-publish --no-gh-release -t npm ${{ inputs.dry-run && '--dry-run' || '' }}
+          npm config set tag "$NPM_TAG"
+          pnpm napi pre-publish --no-gh-release -t npm $DRY_RUN_FLAG
         working-directory: ${{ steps.napi-info.outputs.binding-directory }}
 
       - name: Release npm packages
+        env:
+          NPM_TAG: ${{ inputs.npm-tag }}
+          DRY_RUN_FLAG: ${{ inputs.dry-run && '--dry-run' || '' }}
         run: |
-          pnpm publish -r --tag ${{ inputs.npm-tag }} --no-git-checks --provenance --access public ${{ inputs.dry-run && '--dry-run' || '' }}
+          pnpm publish -r --tag $NPM_TAG --no-git-checks --provenance --access public $DRY_RUN_FLAG
         working-directory: ./rspack
