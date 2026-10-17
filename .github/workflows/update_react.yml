@@ -65,9 +65,11 @@ jobs:
 
       - name: Create Pull Request
         shell: bash
-        run: pnpm sync-react --actor "${{ github.actor }}" --commit --create-pull --version "${{ inputs.version }}"
         env:
+          ACTOR: ${{ github.actor }}
+          VERSION: ${{ inputs.version }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN_PULL_REQUESTS }}
           RELEASE_GITHUB_TOKEN: ${{ steps.release-app-token.outputs.token }}
           RELEASE_GITHUB_APP_SLUG: ${{ steps.release-app-token.outputs.app-slug }}
           RELEASE_GITHUB_APP_USER_ID: ${{ steps.release-app-user.outputs.user-id }}
+        run: pnpm sync-react --actor "$ACTOR" --commit --create-pull --version "$VERSION"
